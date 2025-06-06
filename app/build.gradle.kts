@@ -40,6 +40,21 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Configuración moderna para resolver conflictos
+    packaging {
+        jniLibs {
+            pickFirsts.add("**/libc++_shared.so")
+            pickFirsts.add("**/libjsc.so")
+        }
+        resources {
+            excludes.add("META-INF/DEPENDENCIES")
+            excludes.add("META-INF/LICENSE")
+            excludes.add("META-INF/LICENSE.txt")
+            excludes.add("META-INF/NOTICE")
+            excludes.add("META-INF/NOTICE.txt")
+        }
+    }
 }
 
 dependencies {
@@ -56,16 +71,13 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
 
-    // ARCore y Sceneform
+    // Solo ARCore (sin Sceneform que causa conflictos)
     implementation("com.google.ar:core:1.41.0")
-    implementation("com.google.ar.sceneform.ux:sceneform-ux:1.17.1")
-    implementation("com.google.ar.sceneform:core:1.17.1")
-    implementation("com.google.ar.sceneform:animation:1.17.1")
-    implementation("com.google.ar.sceneform:rendering:1.17.1")
 
-    // Para cargar modelos 3D
-    implementation("de.javagl:obj:0.4.0")
+    // OpenGL y rendering para AR
+    implementation("org.rajawali3d:rajawali:1.2.1970")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -74,4 +86,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+// Configuración global para excluir Support Libraries
+configurations.all {
+    exclude(group = "com.android.support")
 }
