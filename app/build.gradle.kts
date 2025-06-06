@@ -76,9 +76,6 @@ dependencies {
     // Solo ARCore (sin Sceneform que causa conflictos)
     implementation("com.google.ar:core:1.41.0")
 
-    // OpenGL y rendering para AR
-    implementation("org.rajawali3d:rajawali:1.2.1970")
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

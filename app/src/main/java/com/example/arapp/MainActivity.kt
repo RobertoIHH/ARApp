@@ -7,6 +7,7 @@ import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
+import android.view.Surface
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -26,6 +27,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     private var installRequested = false
     private var backgroundTextureId = -1
     private val anchors = mutableListOf<Anchor>()
+    private var displayRotationHelper: DisplayRotationHelper? = null
 
     // Shaders simples para rendering
     private val vertexShaderCode = """
@@ -85,6 +87,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         setContentView(R.layout.activity_main)
 
         surfaceView = findViewById(R.id.surfaceview)
+        displayRotationHelper = DisplayRotationHelper(this)
 
         // Configurar GLSurfaceView
         surfaceView.preserveEGLContextOnPause = true
@@ -148,15 +151,24 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     private fun handleTap(x: Float, y: Float) {
         session?.let { session ->
             try {
-                val frame = session.update()
-                val hits = frame.hitTest(x, y)
+                // Actualizar sesión en el hilo GL
+                surfaceView.queueEvent {
+                    try {
+                        val frame = session.update()
+                        val hits = frame.hitTest(x, y)
 
-                for (hit in hits) {
-                    val trackable = hit.trackable
-                    if (trackable is Plane && trackable.isPoseInPolygon(hit.hitPose)) {
-                        anchors.add(hit.createAnchor())
-                        Toast.makeText(this, "¡Objeto colocado!", Toast.LENGTH_SHORT).show()
-                        break
+                        for (hit in hits) {
+                            val trackable = hit.trackable
+                            if (trackable is Plane && trackable.isPoseInPolygon(hit.hitPose)) {
+                                anchors.add(hit.createAnchor())
+                                runOnUiThread {
+                                    Toast.makeText(this@MainActivity, "¡Objeto colocado!", Toast.LENGTH_SHORT).show()
+                                }
+                                break
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error al colocar objeto en GL thread", e)
                     }
                 }
             } catch (e: Exception) {
@@ -195,6 +207,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         try {
             session?.resume()
             surfaceView.onResume()
+            displayRotationHelper?.onResume()
         } catch (e: CameraNotAvailableException) {
             Log.e(TAG, "Cámara no disponible", e)
             session = null
@@ -203,6 +216,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
     override fun onPause() {
         super.onPause()
+        displayRotationHelper?.onPause()
         surfaceView.onPause()
         session?.pause()
     }
@@ -234,11 +248,19 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST)
+
+        // Configurar ARCore con la textura
+        try {
+            session?.setCameraTextureName(backgroundTextureId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error configurando textura ARCore", e)
+        }
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
-        session?.setDisplayGeometry(0, width, height)
+        displayRotationHelper?.onSurfaceChanged(width, height)
+        session?.setDisplayGeometry(displayRotationHelper?.displayRotation ?: 0, width, height)
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -247,7 +269,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         val session = this.session ?: return
 
         try {
-            session.setCameraTextureName(backgroundTextureId)
+            displayRotationHelper?.updateSessionIfNeeded(session)
             val frame = session.update()
             val camera = frame.camera
 
@@ -306,5 +328,44 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         GLES20.glShaderSource(shader, shaderCode)
         GLES20.glCompileShader(shader)
         return shader
+    }
+}
+
+// Clase helper para manejar rotación de pantalla
+class DisplayRotationHelper(private val context: AppCompatActivity) {
+    var displayRotation = 0
+        private set
+
+    fun onResume() {
+        // Implementación básica
+    }
+
+    fun onPause() {
+        // Implementación básica
+    }
+
+    fun onSurfaceChanged(width: Int, height: Int) {
+        displayRotation = when (context.windowManager.defaultDisplay.rotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 1
+            Surface.ROTATION_180 -> 2
+            Surface.ROTATION_270 -> 3
+            else -> 0
+        }
+    }
+
+    fun updateSessionIfNeeded(session: Session) {
+        val newRotation = when (context.windowManager.defaultDisplay.rotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 1
+            Surface.ROTATION_180 -> 2
+            Surface.ROTATION_270 -> 3
+            else -> 0
+        }
+
+        if (displayRotation != newRotation) {
+            displayRotation = newRotation
+            // La superficie ya maneja esto automáticamente
+        }
     }
 }

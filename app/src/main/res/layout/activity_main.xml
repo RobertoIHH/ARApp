@@ -25,26 +25,4 @@
         android:textColor="@android:color/white"
         android:textSize="16sp" />
 
-</RelativeLayout>_width="match_parent"
-    android:layout_height="match_parent"
-    app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Instrucciones para el usuario -->
-<TextView
-android:id="@+id/instructions_text"
-android:layout_width="wrap_content"
-android:layout_height="wrap_content"
-android:background="@color/black_transparent"
-android:padding="16dp"
-android:text="Apunta la cámara a una superficie plana y toca para colocar un objeto"
-android:textColor="@android:color/white"
-android:textSize="16sp"
-app:layout_constraintEnd_toEndOf="parent"
-app:layout_constraintStart_toStartOf="parent"
-app:layout_constraintTop_toTopOf="parent"
-android:layout_marginTop="32dp" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+</RelativeLayout>
