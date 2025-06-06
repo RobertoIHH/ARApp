@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">AR App</string>
+    <string name="camera_permission_required">Permiso de cámara requerido para AR</string>
+    <string name="ar_not_supported">Este dispositivo no soporta AR</string>
+    <string name="install_arcore">Por favor instala ARCore desde Google Play Store</string>
+    <string name="tap_to_place">Toca para colocar objeto</string>
+    <string name="look_for_surfaces">Busca superficies planas...</string>
+</resources>
